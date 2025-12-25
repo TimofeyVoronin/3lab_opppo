@@ -1,24 +1,28 @@
-"""Модуль для обработки транспортных объектов и команд ADD, REM, PRINT."""
+"""
+Модуль для обработки транспортных объектов и выполнения команд ADD, REM, PRINT.
+Реализация соответствует варианту 4 (Транспорт).
+"""
+
 from abc import ABC, abstractmethod
 
 
-# АБСТРАКТНЫЙ БАЗОВЫЙ КЛАСС: ТРАНСПОРТ
+# АБСТРАКТНЫЙ БАЗОВЫЙ КЛАСС: TRANSPORT
 class Transport(ABC):
     """
-    Абстрактный базовый класс.
+    Абстрактный базовый класс транспорта.
     Содержит общие параметры для всех видов транспорта.
     """
 
     def __init__(self, owner: str, speed: int, distance: int):
         self.owner = owner          # Имя владельца
         self.speed = speed          # Скорость
-        self.distance = distance    # Расстояние
+        self.distance = distance    # Расстояние между пунктами
 
     @abstractmethod
     def info(self) -> str:
         """
         Абстрактный метод.
-        Возвращает строку с описанием объекта.
+        Должен возвращать строку с описанием объекта транспорта.
         """
         pass
 
@@ -26,10 +30,18 @@ class Transport(ABC):
 # КЛАСС: САМОЛЁТ
 class Plane(Transport):
     """Класс самолёта."""
-    def __init__(self, owner, speed, distance, flight_range, capacity):
+
+    def __init__(
+        self,
+        owner: str,
+        speed: int,
+        distance: int,
+        flight_range: int,
+        capacity: int
+    ):
         super().__init__(owner, speed, distance)
-        self.flight_range = flight_range      # Дальность полёта
-        self.capacity = capacity              # Грузоподъёмность
+        self.flight_range = flight_range    # Дальность полёта
+        self.capacity = capacity            # Грузоподъёмность
 
     def info(self) -> str:
         return (
@@ -44,7 +56,8 @@ class Plane(Transport):
 # КЛАСС: ПОЕЗД
 class Train(Transport):
     """Класс поезда."""
-    def __init__(self, owner, speed, distance, wagons):
+
+    def __init__(self, owner: str, speed: int, distance: int, wagons: int):
         super().__init__(owner, speed, distance)
         self.wagons = wagons    # Количество вагонов
 
@@ -60,7 +73,15 @@ class Train(Transport):
 # КЛАСС: ГРУЗОВИК
 class Truck(Transport):
     """Класс грузовика."""
-    def __init__(self, owner, speed, distance, capacity, volume):
+
+    def __init__(
+        self,
+        owner: str,
+        speed: int,
+        distance: int,
+        capacity: int,
+        volume: float
+    ):
         super().__init__(owner, speed, distance)
         self.capacity = capacity    # Грузоподъёмность
         self.volume = volume        # Объём кузова
@@ -78,51 +99,90 @@ class Truck(Transport):
 # КОНТЕЙНЕР ДЛЯ ХРАНЕНИЯ ОБЪЕКТОВ
 class TransportContainer:
     """
-    Контейнер реализован на основе стандартного списка list.
+    Контейнер для хранения объектов транспорта.
+    Реализован на основе стандартного списка list.
     """
 
     def __init__(self):
         self.items: list[Transport] = []
 
     def add(self, obj: Transport):
-        """Добавление объекта в контейнер"""
+        """Добавление объекта в контейнер."""
         self.items.append(obj)
 
-    def remove_by_condition(self, field, operator, value) -> int:
+    def remove_by_condition(self, field: str, operator: str, value) -> int:
         """
-        Удаление объектов по условию.
+        Удаление объектов по условию вида:
+        field operator value (например: speed > 100)
         Возвращает количество удалённых объектов.
         """
         before = len(self.items)
 
         def check(obj: Transport) -> bool:
+            # Получаем значение атрибута по имени
             attr = getattr(obj, field, None)
             if attr is None:
                 return False
-            if operator == ">":
-                return attr > value
-            if operator == "<":
-                return attr < value
-            if operator == "==":
-                return attr == value
-            return False
 
-        # Оставляем только те объекты, которые не удовлетворяют условию
+            # Словарь операторов (результаты вычисляются сразу)
+            operators = {
+                ">": attr > value,
+                "<": attr < value,
+                "==": attr == value
+            }
+
+            return operators.get(operator, False)
+
+        # Оставляем только те объекты, которые не подходят под условие
         self.items = [obj for obj in self.items if not check(obj)]
-
-        after = len(self.items)
-        return before - after
+        return before - len(self.items)
 
     def print_all(self):
-        """Вывод всех объектов контейнера"""
+        """Вывод всех объектов контейнера."""
         for obj in self.items:
             print(obj.info())
 
 
-# ОБРАБОТКА КОМАНДЫ ADD
-def parse_add(parts, container: TransportContainer):
+# СОЗДАНИЕ ОБЪЕКТОВ ТРАНСПОРТА
+def create_transport(transport_type: str, params: dict) -> Transport | None:
     """
-    Создание объекта транспорта и добавление в контейнер.
+    Создание объекта транспорта по типу и параметрам.
+    Возвращает объект транспорта или None.
+    """
+    if transport_type == "PLANE":
+        return Plane(
+            params["owner"],
+            params["speed"],
+            params["distance"],
+            params["range"],
+            params["capacity"]
+        )
+
+    if transport_type == "TRAIN":
+        return Train(
+            params["owner"],
+            params["speed"],
+            params["distance"],
+            params["wagons"]
+        )
+
+    if transport_type == "TRUCK":
+        return Truck(
+            params["owner"],
+            params["speed"],
+            params["distance"],
+            params["capacity"],
+            params["volume"]
+        )
+
+    return None
+
+
+# ОБРАБОТКА КОМАНД
+def parse_add(parts: list[str], container: TransportContainer):
+    """
+    Обработка команды ADD.
+    Создаёт объект транспорта и добавляет его в контейнер.
     """
     transport_type = parts[1]
     params = {}
@@ -132,57 +192,39 @@ def parse_add(parts, container: TransportContainer):
         key, value = part.split("=")
         params[key] = value
 
-    owner = params["owner"]
-    speed = int(params["speed"])
-    distance = int(params["distance"])
+    # Приведение типов
+    params["speed"] = int(params["speed"])
+    params["distance"] = int(params["distance"])
 
-    if transport_type == "PLANE":
-        obj = Plane(
-            owner,
-            speed,
-            distance,
-            int(params["range"]),
-            int(params["capacity"])
-        )
-    elif transport_type == "TRAIN":
-        obj = Train(
-            owner,
-            speed,
-            distance,
-            int(params["wagons"])
-        )
-    elif transport_type == "TRUCK":
-        obj = Truck(
-            owner,
-            speed,
-            distance,
-            int(params["capacity"]),
-            float(params["volume"])
-        )
-    else:
-        return
+    if "capacity" in params:
+        params["capacity"] = int(params["capacity"])
+    if "range" in params:
+        params["range"] = int(params["range"])
+    if "wagons" in params:
+        params["wagons"] = int(params["wagons"])
+    if "volume" in params:
+        params["volume"] = float(params["volume"])
 
-    container.add(obj)
+    obj = create_transport(transport_type, params)
+    if obj:
+        container.add(obj)
 
 
-# ОБРАБОТКА КОМАНДЫ REM
-def parse_rem(parts, container: TransportContainer):
+def parse_rem(parts: list[str], container: TransportContainer):
     """
-    Удаление объектов по условию.
+    Обработка команды REM.
+    Удаляет объекты из контейнера по заданному условию.
     """
-    field = parts[1]
-    operator = parts[2]
-    value = int(parts[3])
-
-    print("[REM]")
+    field, operator, value = parts[1], parts[2], int(parts[3])
     removed = container.remove_by_condition(field, operator, value)
+    print("[REM]")
     print(f"Удалено объектов: {removed}")
 
 
-# ОБРАБОТКА КОМАНДЫ PRINT
 def parse_print(container: TransportContainer):
     """
-    Вывод содержимого контейнера.
+    Обработка команды PRINT.
+    Выводит содержимое контейнера.
     """
     print("[PRINT]")
     if not container.items:
@@ -191,11 +233,10 @@ def parse_print(container: TransportContainer):
         container.print_all()
 
 
-# ЧТЕНИЕ ФАЙЛА И ВЫПОЛНЕНИЕ КОМАНД
+# ОСНОВНАЯ ФУНКЦИЯ ЧТЕНИЯ ФАЙЛА
 def process_file(filename: str):
     """
-    Основная функция.
-    Читает команды из файла и выполняет их.
+    Читает файл с командами и выполняет их последовательно.
     """
     container = TransportContainer()
 
