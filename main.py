@@ -1,3 +1,4 @@
+"""Модуль для обработки транспортных объектов и команд ADD, REM, PRINT."""
 from abc import ABC, abstractmethod
 
 
@@ -24,6 +25,7 @@ class Transport(ABC):
 
 # КЛАСС: САМОЛЁТ
 class Plane(Transport):
+    """Класс самолёта."""
     def __init__(self, owner, speed, distance, flight_range, capacity):
         super().__init__(owner, speed, distance)
         self.flight_range = flight_range      # Дальность полёта
@@ -41,6 +43,7 @@ class Plane(Transport):
 
 # КЛАСС: ПОЕЗД
 class Train(Transport):
+    """Класс поезда."""
     def __init__(self, owner, speed, distance, wagons):
         super().__init__(owner, speed, distance)
         self.wagons = wagons    # Количество вагонов
@@ -56,6 +59,7 @@ class Train(Transport):
 
 # КЛАСС: ГРУЗОВИК
 class Truck(Transport):
+    """Класс грузовика."""
     def __init__(self, owner, speed, distance, capacity, volume):
         super().__init__(owner, speed, distance)
         self.capacity = capacity    # Грузоподъёмность
