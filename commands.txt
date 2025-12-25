@@ -1,0 +1,6 @@
+ADD PLANE owner=Andry speed=650 distance=2000 range=3000 capacity=10000
+ADD TRAIN owner=Max speed=100 distance=900 wagons=60
+ADD TRUCK owner=Ivan speed=90 distance=300 capacity=5000 volume=42.5
+PRINT
+REM speed > 100
+PRINT
